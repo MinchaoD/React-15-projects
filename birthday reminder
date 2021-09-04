@@ -1,0 +1,95 @@
+App.js
+import React, { Component, useState } from 'react';
+import data from './data';
+import List from './List';
+
+function App() {
+  const [ people, setPeople] = useState(data);
+
+  return (
+    <main>
+      <section className = "container">
+        <h3> {people.length} birthdays today </h3>
+        <List people = {people} />
+         {/* we don't need this.state here, not like the class */}
+        <button onClick={() => setPeople([])}> clear all </button>
+      </section>
+    </main>
+  );
+}
+
+export default App;
+
+// below is the code with class and constructor, which need props on List.js to pass the data to the different component
+// class App extends Component {
+//   constructor(props) {
+//     super(props);
+//     this.state = {
+//        people: data
+//     };
+//   }
+
+//   render(){
+//   return (
+//     <main>
+//       <section className = "container">
+//         <h3> {this.state.people.length} birthdays today </h3>
+//         <List people = {this.state.people} />
+//         <button onClick={() => console.log('clicked')}> clear all </button>
+//       </section>
+//     </main>
+//   );}
+// }
+
+// export default App;
+
+
+List.js
+import React from 'react';
+
+const List = ({people}) => {
+  // no need (props) here, but need {people} different from class component
+  return (
+    <> 
+    {/* this is like <React.Fragment> */}
+      {people.map((person) => {
+        const {id,name,age,image} = person;
+        return(
+          <article key={id} className="person">
+            <img src={image} alt={name}/>
+            <div>
+              <h4>{name}</h4>
+              <p>{age} years</p>
+            </div>
+          </article>
+        )
+      })}
+    </>
+    // this is like </React.Fragment>
+  );
+};
+
+export default List;
+
+// below is code with class and constructors and props
+// const List = (props) => {
+//   return (
+//     <> 
+//       {props.people.map((person) => {
+//         const {id,name,age,image} = person;
+//         return(
+//           <article key={id} className="person">
+//             <img src={image} alt={name}/>
+//             <div>
+//               <h4>{name}</h4>
+//               <p>{age} years</p>
+//             </div>
+//           </article>
+//         )
+//       })}
+//     </>
+  
+//   );
+// };
+
+// export default List;
