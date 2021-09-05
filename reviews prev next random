@@ -46,8 +46,18 @@ const Review = () => {
     return newIndex
   })}
   
+
+  const randomPerson = () =>{setIndex((index) => {
+    let newIndex = Math.floor(Math.random()*(people.length))
+    if (newIndex == index){
+      randomPerson()
+    }
+    // if the newIndex is same the last index, which means the person won't change, we can run the randomPerson function again untill we get a different person
+    return newIndex
+  })}
   
-  const randomPerson = () =>{setIndex(Math.floor(Math.random()*(people.length)))}
+  // if I don't need to check if the random number is same, then I can just use the below code
+  //const randomPerson = () =>{setIndex(Math.floor(Math.random()*(people.length)))}
 
   return (
   <article className = 'review'>
