@@ -1,0 +1,129 @@
+App.js:
+import React, { useState, useEffect } from 'react'
+import Loading from './Loading'
+import Tours from './Tours'
+// ATTENTION!!!!!!!!!!
+// I SWITCHED TO PERMANENT DOMAIN
+const url = 'https://course-api.com/react-tours-project'
+function App() {
+  const [loading, setLoading] = useState(true)
+  const [tours, setTours] = useState([])
+
+  const deleteTour = (id) => {
+    const newTour = tours.filter(item => item.id !== id)
+    // filter the ones are not clicked
+    setTours(newTour)
+  }
+
+  const tourSearch = async () => {
+    setLoading(true);
+    fetch(url)
+    .then(response => response.json())
+    .then(data => setTours(data),
+                  setLoading(false))
+    .catch(error => 
+      console.log(error))
+    
+  }
+
+  // below code using await is exactly the same:
+
+  // const tourSearch = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await fetch(url)
+  //     const tours = await response.json()
+  //     setLoading(false)
+  //     setTours(tours)
+  //   } catch(error){
+  //     console.log(error)
+  //   }
+  // }
+
+  useEffect(() => {
+    tourSearch();
+    
+  },[])
+  // I can not just use tourSearch(), have to use useEffect...
+
+  if(loading){
+    return (
+    <Loading /> )
+  } 
+
+  if(tours.length == 0) {
+    return (
+      <main>
+        <div className = 'title'>
+           <h2 className = 'title'> No Tour Left </h2>
+           <button className='btn' onClick = {() => tourSearch()}>Refresh</button>
+        </div>
+      </main>
+    )}
+    // this set of if code can be rewritten at the same place because it has <main> and same layout
+
+  return (
+    <main>
+       <h2 className = 'title'> Our Tours </h2>
+      <Tours tours = {tours} deleteTour = {deleteTour} />
+    </main>
+    // <main> here is to make each tour list to be in the container, 
+    // if no <main>, the list will be like container-fluid, all the way cross the screen
+  )
+}
+
+export default App
+
+tours.js:
+import React from 'react';
+import Tour from './Tour';
+const Tours = ({tours, deleteTour}) => {
+  // we can not write const Tours = ({tours}, {deleteTour}), this is wrong
+  return (
+    <>
+    <div>
+      {tours.map(item => {
+        return <Tour key = {item.id} tour = {item} deleteTour = {deleteTour}/> })}
+        {/* // this code can also be: return <Tour key = {item.id} {...item}/>, but in Tour.js line 3, 
+        // it should be const Tour = ({id, image, namee, info, price})   because they are destructed */}
+      
+    </div>
+  
+  </>
+  )};
+
+export default Tours;
+
+tour.js:
+import React, { useState } from 'react';
+
+const Tour = ({tour,deleteTour}) => {
+  const [readmore, setReadmore] = useState('Read More')
+  // or this code can be const [readmore, setReadmore] = useState(false), but the below button code for line 18 should also be changed to:
+  // <button onClick = {() => setReadmore(!readmore)}>{readmore? 'Read More': 'Show Less'}
+  return(
+  
+  <article className='container single-tour'>
+    <img src={tour.image} alt={tour.name} />
+    <footer>
+      <div className="tour-info">
+        <h4>{tour.name}</h4>
+        <h4 className='tour-price'>${tour.price}</h4>
+      </div>
+      <p>
+        {readmore=='Read More'? tour.info.substring(0,200) :tour.info}
+        {/* substring is to get the string from index 0 to index 200 */}
+        <button onClick= {() => readmore=='Read More'? setReadmore('Show Less'): setReadmore('Read More')}>{readmore}</button>
+        
+      </p>
+      <button className='delete-btn' onClick = {() => deleteTour(tour.id)}>
+        not interested
+      </button>
+    </footer>
+
+  </article>
+  
+  )};
+
+export default Tour;
+
