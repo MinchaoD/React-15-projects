@@ -1,0 +1,63 @@
+App.js:
+import React, { useState } from 'react';
+import data from './data';
+import Question from './Question';
+function App() {
+  return (
+    
+    <main>
+      
+      <div className = 'container'>
+        <h3>questions and answers about login</h3>
+        <section className='info'>
+          
+          {data.map((item) => {
+            return (
+              <Question {...item} />
+              // will pass the ...item to the questions compoennt, which is all the data
+            )
+          })}
+        </section>
+      </div>
+    </main>
+   
+    );
+}
+
+export default App;
+
+Questions.js:
+import React, { useState } from 'react';
+import { AiOutlineMinus, AiOutlinePlus } from 'react-icons/ai';
+const Question = ({...item}) => {
+  const[icon, setIcon] = useState(true)
+  const alldata = {...item}
+  return (
+          <article className = 'question' >
+            <header>
+              <h4>{alldata.title}</h4>
+              <button className = 'btn' onClick = {() => setIcon(!icon)}>
+               {icon? <AiOutlinePlus/> : <AiOutlineMinus/>}</button>
+            </header>
+            <p>
+              {icon? "": alldata.info}
+            </p>
+            {/* this code can also be: {icon && <p>{alldata.info}</p>} */}
+          </article>)}
+
+// we can also use the destructure as below:
+// const Question = ({title, info}) => {
+//   // here the title, info are destructure
+//   const[icon, setIcon] = useState(true)
+ 
+//   return (
+//           <article className = 'question' >
+//             <header>
+//               <h4>{title}</h4>
+//               <button className = 'btn' onClick = {() => setIcon(!icon)}>
+//                {icon? <AiOutlinePlus/> : <AiOutlineMinus/>}</button>
+//             </header>
+//             {icon? "": info}
+//           </article>)}
+
+export default Question;
