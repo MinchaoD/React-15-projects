@@ -1,0 +1,97 @@
+import React, { useState, useEffect } from 'react'
+import { FaAngleDoubleRight } from 'react-icons/fa'
+// ATTENTION!!!!!!!!!!
+// I SWITCHED TO PERMANENT DOMAIN
+const url = 'https://course-api.com/react-tabs-project'
+function App() {
+  const [loading, setLoading] = useState(true)
+  const [source, setSource] = useState([])
+  const [job, setJob] = useState(0)
+
+  const getData = async() => {
+    setLoading(true);
+    
+    const response = await fetch(url)
+    const data = await response.json()
+    setSource(data)
+    setLoading(false)
+
+    // fetch(url)
+    // .then(response => response.json())
+    // .then(data => setSource(data),
+    //               setLoading(false))
+    // .catch(error => console.log(error))
+
+    // usually we can use above code instead as well, but for some reason
+    // it won't work for this project, it will not read the title, company, etc after fetch
+  }
+
+  
+  useEffect(() => {
+    getData()
+  },[])
+  // [] here is will run the getData function once the page is refreshed
+
+  if (loading) {
+    return(
+      <div className='loading'>
+        <h1>
+          Loading...
+        </h1>
+      </div>
+
+    )
+  }
+  
+  return (
+    <section className='section'>
+      <div className='title'>
+        <h2>experience</h2>
+        <div className='underline'></div>
+      </div>
+      <div className='jobs-center'>
+        <div className='btn-container'>
+            {source.map((item,index) => {
+            return (
+             
+              <button 
+                key={item.id}
+               
+                className={`job-btn ${index === job && 'active-btn'}`}
+                // the above code is also ok, the difference is the ${index === job && 'active-btn'} means when mouse hover onto the new job, the current job is still active which is pretty good
+                // or if don't want to do this, can just be like  className='job-btn'
+                onClick={() => setJob(source.indexOf(item))}>
+                  {/*  the above code can also be setJob(index), because index is define next to item above */}
+                  {item.company}
+              </button>
+             
+            )
+          })}
+        </div>
+ 
+
+     <article className='job-info'>
+       <h3>{source[job].title}</h3>
+       <h4>{source[job].company}</h4>
+       <p className='job-date'>{source[job].dates}</p>
+       {/* if I use: const { company, dates, duties, title} = source[job] to destruct it first, is also ok, then here will be just like {title} instead of {source[job].title} */}
+       {source[job].duties.map(item => {
+         return (
+           <div className='job-desc'>
+             <FaAngleDoubleRight className="job-icon"></FaAngleDoubleRight>
+             <p>{item}</p>
+           </div>
+         )
+       })}
+    
+    </article>
+    </div>
+    <button type='button' className='btn'>
+      more info
+    </button>
+   
+    </section>
+  )
+}
+
+export default App
