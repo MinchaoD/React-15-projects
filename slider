@@ -1,0 +1,83 @@
+App.js:
+
+import React, { useState, useEffect } from 'react';
+import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
+import { FaQuoteRight } from 'react-icons/fa';
+import data from './data';
+function App() {
+  const [people, setPeople] = useState(data)
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (index < 0) {
+      setIndex(people.length - 1)
+    }
+    if (index > people.length -1){
+      setIndex(0)
+    }
+  },[index, people])
+  // this is very useful code, everytime when index changes (also if people changes, this can be omit if usually data won't change)
+  // then check if index is smaller than 0, set it to the last person's index, if it is bigger than the last person's index, then set it to 0
+  // because below button onClick will do index + 1 and index -1 and it is possible to set it to <0 or >last person's index
+
+ useEffect(() => {
+   const autoSlider = setInterval(() => {
+     setIndex(index + 1)
+   }, 3000)
+   return(() =>
+   clearInterval(autoSlider))
+ },[index])
+ // this is to set an anto slide show, if there is no [index] at the end, it will work the same too, because it will just alway run auto slide show
+ // if there is no clearInterval then if click on the button prev and next, it will run together with the auto slide
+ //Inside useEffect we can add a return statement at the end of function call which returns a function. This return function does the cleanup work.
+ //It's called every time before that effect runs – to clean up from the last run, so when I click on next or prev, then the auto slide will clear up the current the auto run and restart again,
+ // so it won't interfere with the next and prev button
+
+
+  return (
+    <section className = 'section'>
+      <div className = 'title'>
+        <h2>
+          <span>/</span>reviews
+        </h2>
+      </div>
+      <div className = 'section-center'>
+        {people.map((item, personIndex) => {
+          let position = 'nextSlide';
+          if(personIndex === index){
+            // here personIndex is the people map to each person, and their index number
+            // here index is the setState(0) initially to be 0, then click the next or prev will be + 1 or -1
+            position = 'activeSlide'
+          };
+          if (personIndex === index - 1 ||
+            (index === 0 && personIndex === people.length - 1)){
+              // this is to set if the index is 0, the last person will be on the left
+              // if no this code, then when index is 0, the last peron(people.length-1) will be slided from right instead of left
+              // because it was put on the nextslide which is right side, so we need this code after || , so we make sure put the last person to the left side
+              // so it can rotate from one direction
+            position = 'lastSlide'
+          }
+
+          return (
+            <article className = {position}>
+              <img src={item.image} alt={item.name} className = 'person-img' />
+              <h4>{item.name}</h4>
+              <p className = 'title'>{item.title}</p>
+              <p className = 'text'>{item.quote}</p>
+              <FaQuoteRight className = 'icon' />
+            </article>
+            // in index.css file, under article there is opacity: 0
+            // because if no this opacity is 0 which means hidden, then when do the slide, the slided/moved one will be shown 
+        )})}
+        <button className = 'prev' onClick = {() => setIndex(index + 1)}>
+          <FiChevronLeft />
+        </button>
+        <button className = 'next' onClick = {() => setIndex(index - 1)}>
+          <FiChevronRight />
+        </button>
+      </div>
+    </section>
+    )
+}
+
+export default App;
