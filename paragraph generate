@@ -1,0 +1,59 @@
+App.js:
+import React, { useState } from 'react';
+import data from './data';
+
+function App() {
+  const [source, setSource] = useState([])
+  const [num, setNum] = useState(0)
+  
+const handleSubmit = (e) => {
+  e.preventDefault()
+  const count = parseInt(num)
+  if(count < 1) {
+    setSource(data.slice(0,1))
+  } else if (count > 8) {
+    // here can not be if(count>8)， wrong
+    setSource(data.slice(0,8))
+  } else (
+  setSource(data.slice(0,count)))
+}
+
+// the above set of code can also be like below, the important part is the second if can be just if, or can be else if, either way works. But above code can only use else if, not if
+// const handleSubmit = (e) => {
+// e.preventDefault()
+//   let count = parseInt(num)
+//   if(num < 1) {
+//     count = 1
+//   } if (num > 8) {
+//     count = 8
+//   } 
+//   setSource(data.slice(0,count))
+// }
+  
+  return (
+    <section className = 'section-center'>
+     <h3>TIRED OF BORING LOREM IPSUM?</h3>
+     <form className = 'lorem-form' onSubmit = {handleSubmit}>
+       {/*  here onSubmit is to trigger when button is clicked, so it can also 
+       be put next to button onClick={handleSubmit}, either way works*/}
+     <label htmlFor = 'amount'>paragraphs:</label>
+     <input
+      type = 'number'
+      name = 'amount'
+      id = 'amount'
+      value = {num}
+      onChange = {(e) => setNum(e.target.value)}
+      />
+      <button className = 'btn'> generate </button>
+    </form>
+    <section className = 'lorem-text'>
+        {source.map((item,index) => {
+         return <p key={index}>{item}</p>
+         })}
+    </section>
+
+    </section>
+    )
+}
+
+export default App;
