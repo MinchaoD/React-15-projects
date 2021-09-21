@@ -1,0 +1,100 @@
+App.js:
+import React, { useState } from 'react'
+import SingleColor from './SingleColor'
+
+import Values from 'values.js'
+
+function App() {
+  const [color, setColor] = useState('#9370DB');
+  const [list, setList] = useState(new Values(color).all(10));
+  // these above 2 code is to set the initial color to be #9370DB, so the inital page will have sth to show
+  const [error, setError] = useState(false)
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    try {
+    setList (new Values(color).all(10) )
+    // new Value(color) will be all the values associated with color, such as rgb, hex, etc. 
+    // all(10) 10 different shades darker or lighter, if all(1), it will have more shades, like 200
+    // because it divided to have 1 difference, so there are more of them
+    console.log(list)
+    } catch (error){
+      setError(true)
+      console.log(error)
+    }
+  }
+  // this is to catch error to console.log, so the app won't crash, otherwise, if enter
+  // a wrong color, the app will crash. 
+
+  return (
+  <>
+    <section className='container'>
+      <h3>Color Generator</h3>
+      <form>
+        <input
+          type="text"
+          value={color}
+          onChange = {(e) => setColor(e.target.value) }
+          placeholder='#9370DB'
+
+        />
+        <button className = 'btn' type = 'submit'  onClick = {handleSubmit}>
+           Submit
+        </button>
+      </form>
+    </section>
+    <section className = 'colors'>
+      {list.map((item,index) => {
+        return (
+          <SingleColor 
+            key = {index}
+            item = {item}
+            index = {index}
+            // so that singlecolor component can use this index too, because we need it for color-light class
+           />
+        )
+      }
+      )}
+    </section>
+  </>
+)}
+
+export default App
+
+SingleColor.js:
+import React, { useState, useEffect } from 'react'
+import rgbToHex from './utils'
+// this is not needed, since we are able to get from item.hex directly
+
+const SingleColor = ({item, index}) => {
+  const [alert, setAlert] = useState(false)
+
+  useEffect(() => {
+    const alerttimeout = setTimeout(() => {
+      setAlert(false)
+    }, 3000)
+    return () => clearTimeout(alerttimeout)
+// if there is no this return, then if you click twice the same color, then 2 timer will run at the same time
+
+  },[alert])
+
+  return (
+    <article
+      className={`color ${index > 10 && 'color-light'}`}
+      style = {{backgroundColor: `rgb(${item.rgb})`}}
+      /* can also be style = {{backgroundColor: `rgb(${item.rgb.join(',')})`}}> */
+      onClick = {() => {
+        setAlert(true)
+        navigator.clipboard.writeText(`#${item.hex}`)
+        // this is built in code to copy the text to the clipboard, # is just the symbol in front of hex usually
+      }}
+      >
+      <p className = 'percent-value'>{item.weight}%</p>
+      <p className = 'color-value'>#{item.hex}</p>
+      {alert && <p className='alert'>copied to clipboard</p>}
+    </article>
+  )
+}
+
+export default SingleColor
+
