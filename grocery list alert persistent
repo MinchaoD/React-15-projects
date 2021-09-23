@@ -1,0 +1,187 @@
+App.js:
+import React, { useState, useEffect } from 'react'
+import List from './List'
+import Alert from './Alert'
+
+
+
+function App() {
+
+  const getLocalStorage = () => {
+    let list = localStorage.getItem('list1');
+    if(list) {
+       return list = JSON.parse(localStorage.getItem('list1'))
+    } else {
+      return []
+    }
+  }
+  // the list1 can be anyname, but they have to match with the one in the setItem on line 28
+  // let list here and other 2 list here can not be other name, because this is to match with the list from setList
+  // it is bascally store the list to localStorage, and give the data to list
+
+  const [list, setList] = useState(getLocalStorage());
+  // this way, the initial data for list is from the localstorage which was saved before
+  const [alert, setAlert] = useState({ show: false, msg: '', type: ''});
+  // this is to have different features for alert, type will be used to control the className. good method
+  const [food, setFood] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [editid, setEditID] = useState('')
+
+useEffect(() => {
+  localStorage.setItem('list1', JSON.stringify(list))
+},[list])
+// everytime list changes, will set to the localstorage to save the list
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if(!food){
+      setAlert({show: true, msg:'please add an item', type:'danger'})
+
+    }
+    else if (food && editing) {
+      setList(list.map((item, index) => {
+        if (index === editid) {
+          return food
+        }
+        // if index match with the editid, then will return the newly edited food, once the input box changes, the setFood will trigger
+        return item
+      })
+      )
+      setAlert({show: true, msg: 'item is edited', type:'success'})
+      setFood('')
+    } 
+    else {
+    setList([...list, food]);
+    // this is to add newly added food to list, it's kind like .push, but push doesn't work here
+    setAlert({show: true, msg: 'successfully added new item', type:'success'})
+   // the above code can also be like:
+   // showAlert(true, 'successfully added new item', 'success')
+   // if there are below code set up outside of this function, set final folder for details
+   // showAlert = (show=false, msg='',type='') => {
+   // setAlert({show, type, msg})  
+   // }
+
+    setFood('')
+  }}
+
+  const clearList = () => {
+    setAlert({show: true, msg: 'empty list', type: 'danger'})
+    setList([])
+  }
+
+  const deleteItem = (indexdelete) => {
+    setList(list.filter((item,index) => 
+      index !== indexdelete
+    ))
+    setAlert({show: true, msg: 'item is deleted', type: 'danger'})
+  }
+  // index here is the filter each item's index. indexdelete here is the deleteitem selected item index from list.js
+  // we can also add id for all the items, instead of using its default index. 
+  // for example, we can give each item ={id: new Date().getTime().toString(), title: food}
+  // this way, id is using current time, see final folder of this project for more details
+
+  const editItem = (indexedit) => {
+    // here indexedit is kind match with the index in List.js where onClick= {() => editItem(index)
+    const itemtoEdit = list.find((item, index) => index == indexedit);
+    setEditing(true);
+    setEditID(indexedit);
+    // we need to put this indexedit into a state, so in the handlesubmit function it will grab it to compare with the item id
+    setFood(itemtoEdit);
+    // setFood to the to be edited item name, so that the input box can show this name again and ready to be edited
+  }
+
+  const removeAlert = () => {
+    setAlert({show:false, msg: '', type:''})
+  }
+
+  return (
+    <section className = "section-center">
+     
+      <form className = 'grocery-form'>
+        {alert.show && <Alert alert = {alert} removeAlert = {removeAlert}/>}
+        {/* in the final folder, there is a different way to pass this prop, used {...alert} */}
+      <h3>Grocery List</h3>
+        <div className = 'form-control'>
+          <input
+            type = 'text'
+            className = 'grocery'
+            placeholder = 'e.g. bread'
+            value = {food}
+            onChange = {(e) => {
+              setFood(e.target.value)}
+            }
+          />
+          <button type='submit' className= 'submit-btn' onClick={handleSubmit}>
+            {editing? `Edit` : `Submit`}
+          </button>
+        </div>
+      </form>
+      <div className = 'grocery-container'>
+        <List list={list} deleteItem={deleteItem} editItem={editItem} />
+        <button className = 'clear-btn' onClick = {clearList}>
+          Clear items
+        </button>
+
+      </div>
+    </section>
+    )
+}
+
+export default App
+
+alert.js:
+import React, { useEffect } from 'react'
+
+const Alert = ({alert, removeAlert}) => {
+
+    useEffect(() => {
+     const alerttimeout = setTimeout(()=>{
+        removeAlert();
+      },3000);
+      return () => clearTimeout(alerttimeout);
+    },[alert])
+
+    return (
+    <p className = {`alert alert-${alert.type}`}>{alert.msg}</p>
+   // alert-danger or alert-success is in CSS
+  )
+}
+
+export default Alert
+
+list.js:
+import React from 'react'
+import { FaEdit, FaTrash } from 'react-icons/fa'
+
+const List = ({list, deleteItem, editItem}) => {
+  return (
+    <div className = 'grocery-list'>
+      {list.map((item, index) => {
+        return (
+          <article className='grocery-item' key={index}>
+            <p className = 'title'>{item}</p>
+            <div className='btn-container'>
+              <button
+                type='button'
+                className='edit-btn'
+                onClick= {() => editItem(index)}
+              >
+                <FaEdit />
+              </button>
+              <button
+                type='button'
+                className='delete-btn'
+                onClick= {() => deleteItem(index)}
+              >
+                  <FaTrash />
+                </button>
+            </div>
+
+          </article>
+        )
+      })}
+    </div>
+    )
+}
+
+export default List
