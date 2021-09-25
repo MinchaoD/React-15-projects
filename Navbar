@@ -1,0 +1,68 @@
+Navbar.js:
+
+import React, { useState, useRef, useEffect } from 'react'
+import { FaBars, FaTwitter } from 'react-icons/fa'
+import { links, social } from './data'
+//there is no default export in data.js, so import 2 at same time
+import logo from './logo.svg'
+
+const Navbar = () => {
+  const [showlinks, setShowlinks] = useState(false);
+  const linksContainerRef = useRef();
+  // here useRef(null) is also ok
+  const linksRef = useRef()
+  const toggleLinks = () => {
+    setShowlinks(!showlinks)
+  };
+
+  useEffect(() => {
+    const linksheight = linksRef.current.getBoundingClientRect().height;
+    console.log(linksRef.current)
+    // current and getBoundingClientRect() are all the built in properties
+    if (showlinks) {
+      linksContainerRef.current.style.height = `${linksheight}px`
+      // you can not miss px here
+    } else {
+      linksContainerRef.current.style.height = '0px'
+    }
+  },[showlinks])
+  // here can not be ,[] we have to use [showlinks] because once showlinks changes from 
+  // toggling on and off from the button clicked, this useEffect function will run.
+
+  return (
+    <nav>
+      <div className = 'nav-center'>
+        <div className = 'nav-header'>
+          <img src={logo} className = 'logo' alt='logo' />
+          <button className='nav-toggle' onClick={toggleLinks}>
+            <FaBars />
+          </button>
+        </div>
+        <div className='links-container'ref={linksContainerRef}>
+          {/*  we have create another div for this whole link list, otherwise we won't be able to grab the linksContainerRef */}
+          <ul className='links' ref={linksRef}>
+            {/* created 2 refs, one to hold container contents, one to hold links contents */}
+            {links.map(link => {
+              return (
+                <li key = {link.id}>
+                  <a href={link.url}>{link.text}</a>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+        <ul className='social-icons'>
+          {social.map(item => {
+            return (
+              <li key = {item.id}>
+                <a href={item.url}>{item.icon}</a>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </nav>
+    )
+}
+
+export default Navbar
