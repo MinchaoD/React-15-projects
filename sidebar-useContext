@@ -1,0 +1,165 @@
+in App.js:
+import React from 'react'
+import Modal from './Modal'
+import Sidebar from './Sidebar'
+import Home from './Home'
+function App() {
+  return (
+    <>
+      <Home />
+      <Modal />
+      <Sidebar />
+    </>
+    // this app is to practice useContext, so setting up different components on purpose
+  )
+}
+
+export default App
+
+in Context.js:
+import React, { useState, useContext } from 'react'
+
+const AppContext = React.createContext()
+
+const AppProvider = ({children}) => {
+    const [issidebarOpen, setIssidebarOpen] = useState(false)
+    const [ismodalOpen, setIsmodalOpen] = useState(false)
+    const openSidebar = () => {
+        setIssidebarOpen(true)
+    }
+    const closeSidebar = () => {
+        setIssidebarOpen(false)
+    }
+
+    const openModal = () => {
+        setIsmodalOpen(true)
+    }
+    const closeModal = () => {
+        setIsmodalOpen(false)
+    }
+
+    
+    
+    return <AppContext.Provider 
+        value={{issidebarOpen, ismodalOpen, openSidebar, closeSidebar, openModal, closeModal}}>
+            {children}
+            </AppContext.Provider>
+            // if the value='hello', then we will pass hello to the other components
+ }
+// custom hook, it is another way to pass the value to the children
+// export const useGlobalContext = () => {
+//     return useContext(AppContext)
+// }
+// useGlobalContext is a custom name, but we have to have use in the front
+
+export {AppContext, AppProvider}
+
+// steps for using useContext:
+// 1. First, const AppContext = createContext('Unknown') creates the context that’s going to hold the data/information.
+// here AppContext can be other name, like UserContext
+
+// 2.  inside the <Application /> component, the application’s child components are wrapped inside the app context provider: <AppContext.Provider value={.....}>. 
+// Note that the value prop of the provider component is important: this is how you set the value of the context.
+
+// 3.  <Home/> <Sidebar/> <Modal/> become the consumer of the context by using the built-in useContext(AppContext) hook. 
+// Because in index.js the AppProvider has <App/> and App.js has <Home/> <Sidebar/> <Modal/> 
+//The hook is called with the context as an argument and returns the value.
+
+in Home.js:
+import React, { useContext } from 'react'
+import { FaBars } from 'react-icons/fa'
+import { AppContext, useGlobalContext } from './context'
+
+const Home = () => {
+  const {openSidebar, openModal} =  useContext(AppContext);
+  // the value is like 'hello', just text, then we will use const data =  useContext(AppContext);
+  // this is to pass the data from context.js where the value is to here
+
+  // const data = useGlobalContext()
+  // this is the alternative way if using custom hook
+  
+  return (
+    <main>
+      <button className='sidebar-toggle' onClick={openSidebar}>
+        <FaBars />
+      </button>
+      <button className='btn' onClick={openModal}>show modal</button>
+    </main>
+    )
+
+}
+
+export default Home
+
+in Modal.js:
+import React,{useContext} from 'react'
+import { FaTimes } from 'react-icons/fa'
+import { AppContext,  useGlobalContext } from './context'
+
+const Modal = () => {
+  const {ismodalOpen, closeModal} =  useContext(AppContext);
+  // if use the custom hook, will be like:
+  // const {ismodalOpen, closeModal} =  useGlobalContext();
+  return (
+    <div className={`${
+      ismodalOpen ? 'modal-overlay show-modal' : 'modal-overlay'}`}>
+      <div className='modal-container'>
+        <h3> modal content </h3>
+        <button className='close-modal-btn' onClick={closeModal}>
+          <FaTimes />
+        </button>
+      </div>
+    </div>
+
+  )
+}
+
+export default Modal
+
+in Sidebar.js:
+import React, {useContext} from 'react'
+import logo from './logo.svg'
+import { FaTimes } from 'react-icons/fa'
+import { social, links } from './data'
+import { AppContext,  useGlobalContext } from './context'
+
+const Sidebar = () => {
+  const {issidebarOpen, closeSidebar} = useContext(AppContext)
+   // if use the custom hook, will be like:
+  // const {issidebarOpen, closeSidebar} =  useGlobalContext();
+  return (
+    <aside className={`${issidebarOpen ? 'sidebar show-sidebar' : 'sidebar'}`}>
+    {/* The <aside> HTML element represents a portion of a document whose content is only indirectly related to the document's main content. 
+    Asides are frequently presented as sidebars or call-out boxes. */}
+     <div className='sidebar-header'>
+       <img src={logo} className='logo' alt='coding addict' />
+       <button className='close-btn' onClick={closeSidebar}>
+         <FaTimes />
+       </button>
+     </div>
+     <ul className='links'>
+       {links.map((item) => {
+         return (
+         <li key={item.id}>
+           <a href={item.url}>
+             {item.icon}
+             {item.text}
+           </a>
+        </li>
+       )})}
+     </ul>
+     <ul className='social-icons'>
+       {social.map((item) => {
+         return (
+           <li key={item.id}>
+             <a href={item.url}>{item.icon}</a>
+           </li>
+         )
+       })}
+     </ul>
+    </aside>
+    )
+}
+
+export default Sidebar
+
