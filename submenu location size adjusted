@@ -1,0 +1,249 @@
+app.js:
+import React from 'react'
+import Navbar from './Navbar'
+import Hero from './Hero'
+import Sidebar from './Sidebar'
+import Submenu from './Submenu'
+function App() {
+  return (
+    <>
+      <Navbar />
+      <Sidebar />
+      <Hero />
+      <Submenu />
+    </>
+  )
+}
+
+export default App
+
+hero.js:
+import React from 'react'
+import phoneImg from './images/phone.svg'
+import { useGlobalContext } from './context'
+
+// this hero component is for the main page
+const Hero = () => {
+  const data = useGlobalContext()
+  return <section className='hero'>
+    <div className='hero-center'>
+      <article className='hero-info'>
+        <h1> Payments infrastructure for the internet</h1>
+        <p>Millions of companies of all sizes—from startups to Fortune 500s—use Stripe’s software and APIs to accept payments, send payouts, and manage their businesses online.</p>
+        <button className='btn'>
+          Start Now
+        </button>
+      </article>
+      <article className='hero-images'>
+        <img src={phoneImg} className='phone-img' alt='phone' />
+      </article>
+     
+    </div>
+  </section>
+}
+
+export default Hero
+
+navbar.js:
+import React from 'react'
+import logo from './images/logo.svg'
+import { FaBars } from 'react-icons/fa'
+import { useGlobalContext } from './context'
+
+const Navbar = () => { 
+  const {openSidebar,openSubmenu,closeSubmenu} = useGlobalContext()
+  // if we didn't use custom hook, then this code will be like:
+  // const {openSidebar,openSubmenu,closeSubmenu} = useContext(AppContext);
+  const displaysubmenu = (e) =>{
+    const page = e.target.textContent;
+    // this will grab the text like products, developers and company
+    console.log('p',page)
+    const tempBtn = e.target.getBoundingClientRect();
+    const center = (tempBtn.left + tempBtn.right) / 2;
+    const bottom = tempBtn.bottom - 3;
+    // I want the submenu bottom to be 3px below the tempbtn bottom
+    // center here is where the tempbtn center is. Those all for to get the location for each submenu
+    openSubmenu(page, {center, bottom})
+    // this center bottom information will give to the context.js coordinates, then give to 
+    // setLocation to location, and location will be passed to submenu to get location.center and location.bottom
+  }
+    
+  return <nav className='nav'>
+    <div className='nav-center'>
+      <div className='nav-header'>
+        <img src={logo} className='nav-logo' alt='stripe' />
+        <button className='btn toggle-btn' onClick={openSidebar}>
+          {/* // toggle-btn here is to set display non for smaller screen in css */}
+          <FaBars />
+        </button>
+      </div>
+      <ul className='nav-links'>
+        <li>
+          <button className='link-btn' onMouseOver={displaysubmenu}>
+            {/* onMouseOver instead of click here */}
+            products
+          </button>
+        </li>
+        <li>
+          <button className='link-btn'  onMouseOver={displaysubmenu}>
+            developers
+          </button>
+        </li>
+        <li>
+          <button className='link-btn'  onMouseOver={displaysubmenu}>
+            company
+          </button>
+        </li>
+      </ul>
+      <button className='btn signin-btn'>
+        Sign In
+      </button>
+    </div>
+  </nav>
+}
+
+export default Navbar
+
+sidebar.js:
+import React from 'react'
+import { FaExternalLinkSquareAlt, FaTimes } from 'react-icons/fa'
+import sublinks from './data'
+import { useGlobalContext } from './context'
+
+const Sidebar = () => {
+  const {isSidebarOpen, closeSidebar} = useGlobalContext()
+  return (
+  <aside className={`${isSidebarOpen? 'sidebar-wrapper show' : 'sidebar-wrapper'}`}>
+    {/*  in CSS, the sidebar-wrapper show has display set to visible while sidebar-wrapper set to hidden,
+    sidebar-wrapper is set to grid and height and width to be 100% and top and left to be 0, those are for to set the 
+    pop up window size and location, to be centered and big enough to fill the whole screen*/}
+    <div className='sidebar'>
+      <button className='close-btn' onClick={closeSidebar}>
+        {/* once click on the button, the closeSidebar function will set the isSidebarOpen to false, then will trigger to sidebar-wrapper class to show it as hidden */}
+        <FaTimes />
+      </button>
+      <div className='sidebar-links'>
+        {sublinks.map((item,index) => {
+          return (
+            <article key={index}>
+              <h4>{item.page}</h4>
+              <div className="sidebar-sublinks">
+                {item.links.map((link,index) => {
+                  return (
+                    <a key={index} href={link.url}>
+                      {link.icon}
+                      {link.label}
+                    </a>
+                  )
+                }) }
+                {/* the above is way to map another map to get the data inside another data object */}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </div>
+  </aside>
+  )
+}
+
+export default Sidebar
+
+submenu.js;
+import React, { useState, useRef, useEffect } from 'react'
+import { useGlobalContext } from './context'
+
+const Submenu = () => {
+  const {isSubmenuOpen, location, page} = useGlobalContext()
+ //we can also destructure the page right here : const {isSubmenuOpen, location, page: {page, links}} = useGlobalContext()
+ // this way, later we can just use page instead of page.page
+  const container = useRef(null)
+  const [column, setColumn] = useState('col-2')
+  // col-2 in css is to set the grid column number to be 2, so it is the default here
+
+  useEffect(() => {
+    setColumn('col-2')
+    const submenu = container.current
+    const { center, bottom } = location
+    submenu.style.left = `${center}px`
+    submenu.style.top = `${bottom}px` 
+    // we connected this location with the one set in context.js
+    // location in context.js is set by the bottom and left from navbar.js through coordinates
+    if(page.links.length === 3) {
+      setColumn('col-3')
+      // col-3 is set in css for repeat(3, 1fr), so will be 3 columns
+    }
+    if(page.links.length > 3) {
+      setColumn('col-4')
+    }
+  }, [location, page.links])
+  // if location or page.links changes, then we run useEffect
+  return (
+    <aside className={`${isSubmenuOpen?'submenu show':'submenu'}`}
+      ref={container}>
+      {/* it pretty much uses css show to control the open/close the submenu */}
+      <h4>{page.page}</h4>
+      {/* because in context.js line 10, we have const [page, setPage] = useState({page:'', links:[]}), so page is set to be an object with page and links */}
+      <div className={`submenu-center ${column}`}>
+        {page.links.map((item, index) => {
+          return (
+            <a key={index} href={item.url}>
+              {item.icon}
+              {item.label}
+            </a>
+          )
+        })}
+      </div>
+    </aside>
+  )
+}
+
+export default Submenu
+
+context.js:
+import React, { useState, useContext } from 'react'
+import sublinks from './data'
+
+const AppContext = React.createContext();
+
+export const AppProvider = ({children}) => {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+    const [location, setLocation] = useState({});
+    const [page, setPage] = useState({page:'', links:[]})
+    // note: set location to be an object
+    const openSidebar = () =>{
+        setIsSidebarOpen(true)
+    }
+    const closeSidebar = () =>{
+        setIsSidebarOpen(false)
+    }
+    const openSubmenu = (text, coordinates) =>{
+        const page = sublinks.find((item) => item.page === text)
+        // this is to find if the item in sublinks matches with the clicked/hovered text, then set the page to this found item
+        // the text here is from the one in navbar.js  const page = e.target.textContent; then   openSubmenu(page, {center, bottom})
+        setPage(page)
+        setLocation(coordinates);
+        // this in navbar.js, it has openSubmenu(page, {center, bottom})
+        // so the coordinates here is refer to {center, bottom}
+        setIsSubmenuOpen(true)
+    }
+    const closeSubmenu = () =>{
+        setIsSubmenuOpen(false)
+    }
+
+    return <AppContext.Provider value={{isSidebarOpen, isSubmenuOpen,
+                                        openSidebar, closeSidebar,
+                                        openSubmenu, closeSubmenu,
+                                        location, page}}>
+                {children}
+            </AppContext.Provider>
+}
+// we can pass those data to other component files
+
+export const useGlobalContext = () => {
+    return useContext(AppContext)
+}
+// this is create the custom hook, we can also not react this custom hook.
+// if we don't use custom hook here, then in the component js file, we will write useContext(AppContext) instead of useGlobalContext
+
