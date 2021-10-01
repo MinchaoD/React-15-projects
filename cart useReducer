@@ -1,0 +1,334 @@
+app.js:
+import React from 'react'
+import { useGlobalContext } from './context'
+
+// components
+import Navbar from './Navbar'
+import CartContainer from './CartContainer'
+// items
+
+function App() {
+  const {loading} = useGlobalContext()
+  if (loading) {
+    return (
+      <div className='loading'>
+        <h1>Loading...</h1>
+      </div>
+    )
+  }
+  return (
+    <main>
+      <Navbar />
+      <CartContainer />
+    </main>
+  )
+}
+
+export default App
+
+context.js:
+import React, { useState, useContext, useReducer, useEffect } from 'react'
+import cartItems from './data'
+// this cartItems can be anyname, because in data.js, there is no name assigned, so can be anyname here
+import reducer from './reducer'
+// ATTENTION!!!!!!!!!!
+// I SWITCHED TO PERMANENT DOMAIN
+const url = 'https://course-api.com/react-useReducer-cart-project'
+const AppContext = React.createContext()
+
+const AppProvider = ({ children }) => {
+  // const [cart, setCart] = useState(cartItems)
+// this cartItems can be anyname, because in data.js, there is no name assigned, so can be anyname here, as long as match with line 2
+  
+  const initialState = {
+    loading: false,
+    cart:[],
+    // cart: cartItems,
+    // we also can use the above code if we just get from ./data instead of fetch from API
+    total:0,
+    amount:0,
+  }
+  const [state, dispatch] = useReducer(reducer,initialState)
+// here the initialState of state is set to cart: cartItems
+  
+  const fetchData = async () => {
+      dispatch({type:'loading'})
+      // dispatch is like setLoading if we use useState
+      const response = await fetch(url)
+      const data = await response.json()
+      dispatch ({type:'display', payload: data})
+      // dispatch is like setCart if we use useState
+      // in this display dispatch in reduce.js, we also set the loading back to false
+  }
+
+  useEffect(()=>{
+    fetchData();
+  },[])
+
+  const clearCart = () => {
+    dispatch({type:'clear_cart'})
+  }
+
+  const removeItem = (id) => {
+    dispatch({type:'remove_item', payload: id})
+  }
+
+  const increase = (id) => {
+    dispatch({type: 'increase', payload: id})
+  }
+
+  const decrease = (id) => {
+    dispatch({type: 'decrease', payload: id})
+  }
+
+  useEffect(() => {
+    dispatch({type: 'get_total'})
+
+  }, [state.cart])
+  // everytime when cart changes, we will run dispatch type get totla
+  // we don't need to set up seperate function for this type, we can just use useEffect
+
+  return (
+      <AppContext.Provider
+        value={{
+          ...state,
+          // once have ...state here, the things inside state will be 
+          // passed over to other components, like loading, amount, total, etc
+          clearCart,
+          removeItem,
+          increase,
+          decrease
+        }}
+      >
+        {children}
+      </AppContext.Provider>
+    )
+  }
+// make sure use
+export const useGlobalContext = () => {
+  return useContext(AppContext)
+}
+
+export { AppContext, AppProvider }
+
+const reducer = (state, action) => {
+    switch (action.type) {
+        case 'clear_cart':
+            // seems like that this clear_cart type is automatically connected with the ones in context.js
+            return {...state, cart:[]}
+            // this code can also be just: return { cart:[]}
+    }
+    // it also can be : if(action.type === 'clear_cart'){   }
+    switch (action.type) {
+        case 'remove_item': {
+            return {...state, cart: state.cart.filter((item) => 
+                item.id !== action.payload)}
+                // payload was set to id in context.js
+                // we can also remove ...state in front of cart:, like line 40
+         }
+    }
+
+    switch (action.type) {
+        case 'increase': {
+            let tempcart = state.cart.map((item) => {
+                if (item.id === action.payload) {
+                    return {...item, amount: item.amount + 1}
+                } else
+                return item
+                // this code is important, we have to write return item here
+                // because it is to render the other items which are selected to increase the amount
+            })
+            return { ...state, cart: tempcart}
+            // here ...state can be removed
+    }}
+
+    switch (action.type) {
+        case 'decrease': {
+            let tempcart = state.cart.map((item) => {
+                if (item.id === action.payload) {
+                    return {...item, amount: item.amount - 1}
+                } else
+                return item
+                // this code is important, we have to write return item here
+                // because it is to render the other items which are selected to increase the amount
+            }).filter((item) => item.amount !== 0)
+            // this is chain, like  .map.filter, a smart way to remove the item if the amount is 0
+            return { ...state, cart: tempcart}
+            // here ...state can be removed
+    }}
+
+// if you want to use a toggle function to toggle the increase and decrease, and make them 
+// one dispatch, please see the final folder
+
+    switch (action.type) {
+        case 'get_total': {
+            let {total, amount} = state.cart.reduce((cartTotal, cartItem) =>{
+                // here cartTotal is the previousvalue, cartItem is the current value
+                const {price, amount} = cartItem;
+                // destructure the cartItem to be an object with 2 properties, that way, cartTotal also have the same format
+                const itemPrice = price * amount
+                cartTotal.amount = cartTotal.amount + amount
+                // this + amount is the cartItem.amount, the current value
+                cartTotal.total = cartTotal.total + itemPrice
+                return cartTotal
+            }, {
+                total: 0,
+                amount: 0,
+            })
+            // line 83 is to destructure the reduce to total, amount, because reduce function will return cartTotal
+            // carttotal has 2 properties, so it can destruction to total, amount
+            // we use let instead of const because later we will reassign total to be 2 decimal float
+            // line 93 and 94 is just for the initial state
+
+            total = parseFloat(total.toFixed(2))
+            return {...state, total, amount}
+        }
+    }
+
+    switch (action.type) {
+        case 'loading':
+            return {...state, loading: true}
+    }
+
+   
+    switch (action.type) {
+        case 'display':
+            return {...state, cart: action.payload, loading:false}
+          
+    }
+    throw new Error('no matching action type')
+}
+
+export default reducer
+
+cartcontainer.js:
+import React from 'react'
+import CartItem from './CartItem'
+import { useGlobalContext } from './context'
+
+const CartContainer = () => {
+  const { cart,total, clearCart} = useGlobalContext()
+  if (cart.length === 0) {
+    return (
+      <section className='cart'>
+        {/* cart header */}
+        <header>
+          <h2>your bag</h2>
+          <h4 className='empty-cart'>is currently empty</h4>
+        </header>
+      </section>
+    )
+  }
+  return (
+    <section className='cart'>
+      {/* cart header */}
+      <header>
+        <h2>your bag</h2>
+      </header>
+      {/* cart items */}
+      <div>
+        {cart.map((item) => {
+          return <CartItem key={item.id} item ={item}/>
+           // this can also be:
+           // return <CartItem key={item.id} {...item} />
+           // then for the cartitem.js line 3 should be like const CartItem = ({ id, img, title, price, amount }) => {
+        })}
+      </div>
+      {/* cart footer */}
+      <footer>
+        <hr />
+       {/* this is for the line break */}
+        <div className='cart-total'>
+          <h4>
+            total <span>${total}</span>
+          </h4>
+        </div>
+        <button
+          className='btn clear-btn'
+          onClick={clearCart}
+        >
+          clear cart
+        </button>
+      </footer>
+    </section>
+  )
+}
+
+export default CartContainer
+
+cartitem.js:
+import React from 'react'
+import { useGlobalContext } from './context'
+const CartItem = ({item}) => {
+  // this {item} is from cartcontainer.js, not from context.js
+  const {removeItem, increase, decrease} = useGlobalContext();
+ // this removeItem is from context.js
+  const { id, img, title, price, amount } = item
+  return (
+    <article className='cart-item'>
+      <img src={img} alt={title} />
+      <div>
+        <h4>{title}</h4>
+        <h4 className='item-price'>${price}</h4>
+        {/* remove button */}
+        <button
+          className='remove-btn'
+          onClick={() => removeItem(id)}
+        >
+          remove
+        </button>
+      </div>
+      <div>
+        {/* increase amount */}
+        <button className='amount-btn' onClick={() => increase(id)}>
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>
+            <path d='M10.707 7.05L10 6.343 4.343 12l1.414 1.414L10 9.172l4.243 4.242L15.657 12z' />
+          </svg>
+          {/* this is the upper arrow for the count, this is a way to set up inline code, we can also react icon for this */}
+        </button>
+        {/* amount */}
+        <p className='amount'>{amount}</p>
+        {/* decrease amount */}
+        <button className='amount-btn' onClick={() => decrease(id)}>
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>
+            <path d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z' />
+          </svg>
+          {/* this is the lower arrow for the count */}
+        </button>
+      </div>
+    </article>
+  )
+}
+
+export default CartItem
+
+navbar.js:
+import React from 'react'
+import { useGlobalContext } from './context'
+const Navbar = () => {
+  const {amount} = useGlobalContext()
+  // in the context.js,  value={{...state,}}, and it can pass amount to here
+  return (
+    <nav>
+      <div className='nav-center'>
+        <h3>useReducer</h3>
+        <div className='nav-container'>
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>
+            <path d='M16 6v2h2l2 12H0L2 8h2V6a6 6 0 1 1 12 0zm-2 0a4 4 0 1 0-8 0v2h8V6zM4 10v2h2v-2H4zm10 0v2h2v-2h-2z' />
+          </svg>
+          {/* this <svg> is for the shopping bag icon */}
+          <div className='amount-container'>
+            <p className='total-amount'>{amount}</p>
+          </div>
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+export default Navbar
+
+
+
+
+
