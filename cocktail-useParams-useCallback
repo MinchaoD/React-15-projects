@@ -1,0 +1,259 @@
+app.js:
+import React from 'react'
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
+// import pages
+import Home from './pages/Home'
+import About from './pages/About'
+import SingleCocktail from './pages/SingleCocktail'
+import Error from './pages/Error'
+// import components
+import Navbar from './components/Navbar'
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <Switch>
+        <Route exact path='/'>
+          <Home />
+        </Route>
+        <Route path='/about'>
+          <About />
+        </Route>
+        <Route path='/cocktail/:id'>
+          <SingleCocktail />
+        </Route>
+        <Route path='*'>
+          {/* this means anything/anyname after the main path will be the error page */}
+          <Error />
+        </Route>
+      </Switch>
+    </Router>
+  )
+}
+
+export default App
+
+cocktail.js:
+import React from 'react'
+import { Link } from 'react-router-dom'
+
+const Cocktail = ({item}) => {
+  // if in cocktaillist.js line 26 is {...item}, then here will be
+  // const cocktail = ({image,name,id, info, glass}) => {}
+  return (
+    <article className="cocktail">
+      <div className='img-container'>
+        <img src={item.image} alt={item.name} />
+      </div>
+      <div className="cocktail-footer">
+        <h3>{item.name}</h3>
+        <h4>{item.glass}</h4>
+        <p>{item.info}</p>
+        <Link to={`/cocktail/${item.id}`} className ="btn btn-primary btn-details">
+          {/* here {item.id} is from each cocktail, and it will pass its id data to the 
+          id in route on line 21 in app.js */}
+           details
+        </Link>
+      </div>
+    </article>
+  )
+}
+
+export default Cocktail
+
+cocktailist.js:
+import React from 'react'
+import Cocktail from './Cocktail'
+import Loading from './Loading'
+import { useGlobalContext } from '../context'
+
+const CocktailList = () => {
+  const {cocktails, loading} = useGlobalContext()
+ console.log('c',cocktails)
+  if(loading) {
+    return <Loading />
+  }
+  if(cocktails.length < 1) {
+    return (
+    <h2 className='section-title'>
+      no cocktails matched your search criteria
+    </h2>)
+  }
+
+  return (
+    <section className='section'>
+      <h2 className='section-title'>
+        cocktails
+      </h2>
+      <div className='cocktails-center'>
+        {cocktails.map((item) => {
+          return <Cocktail key={item.id} item ={item} />
+          // item ={item} can also be {...item} here
+          // then in cocktaillist.js line 4 will be 
+          //const cocktail = ({image,name,id, info, glass}) => 
+        })}
+      </div>
+    </section>
+  )
+}
+
+export default CocktailList
+
+searchForm.js:
+import React from 'react'
+import { useGlobalContext } from '../context'
+
+const SearchForm = () => {
+  const {setSearchTerm} = useGlobalContext()
+  const searchValue = React.useRef('');
+
+  React.useEffect(() => {
+    searchValue.current.focus()
+  },[])
+  // this is for when the website is first loaded, the cursor will 
+  // be focused at the input type box for searchvalue
+
+  const searchCocktail = () => {
+    setSearchTerm(searchValue.current.value)
+  }
+
+  const handleSubmit = (e) =>{
+    e.preventDefault()
+  }
+  // a preventDefault is called on the event when submitting the form to prevent a browser reload/refresh
+
+  return (
+    <section className='section search'>
+      <form className='search-form' onSubmit={handleSubmit}>
+        <div className='form-control'>
+          <label htmlFor='name'>
+            search your favorite cocktail
+          </label>
+          <input type='text' id='name' ref={searchValue}
+                  onChange={searchCocktail} />
+        </div>
+      </form>
+    </section>
+  )
+}
+
+export default SearchForm
+
+singlecocktail.js:
+import React from 'react'
+import Loading from '../components/Loading'
+import { useParams, Link } from 'react-router-dom'
+import { useGlobalContext } from '../context'
+const url = 'https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i='
+
+const SingleCocktail = () => {
+  
+  const {id} = useParams()
+ 
+  // useParams is much easier way to find the clicked id, if we don't use useParams, we will have to 
+  // use sth like if(+match.params.id === item.id){
+  //useParams returns an object of key/value pairs of URL parameters. 
+  // Use it to access match.params of the current <Route>.
+  //   <Route path='/cocktail/:id'>
+  //   <SingleCocktail />
+  //  </Route>
+
+  const [loading, setLoading] = React.useState(false);
+  const [cocktail, setCocktail] = React.useState(null);
+
+  // here we set different cocktail and loading, but we can also use the below code to reuse the data from context by using useGlobalContext()
+  // I like the below way is because we don't have to fetch again
+  // the below code line 26 to 31 are tested to work well
+  // if we use below code, we need to destructure the ingredients and instructions and others in context.js, so that we can use them here
+  // and we can delete all the fetch code from line 36 to 64
+
+  // const {cocktails, loading} = useGlobalContext()
+  // const singlecocktail = []
+  // {cocktails.forEach((item) => {
+  //   if (id === item.id){
+  //   singlecocktail.push(item)
+  // }})}
+  // below line 76 should be like <h2 className='section-title'>{singlecocktail[0].name}</h2>
+
+  React.useEffect(() => {
+    setLoading(true);
+    async function getCocktail() {
+      try {
+        const response = await fetch(`${url}${id}`)
+        const data = await response.json()
+        if (data.drinks) {
+          const {strDrink: name, strDrinkThumb: image, strAlcoholic: info
+                , strCategory:category, strGlass: glass, strInstructions: instruction,
+                strIngredient1,  strIngredient2, strIngredient3, strIngredient4, strIngredient5 } = data.drinks[0]
+          const ingredients = [strIngredient1,  strIngredient2, strIngredient3, strIngredient4, strIngredient5]
+
+          const newcocktails = {
+            name, image, info, category, glass, instruction, ingredients
+          }
+          setCocktail(newcocktails)
+        } else {
+          setCocktail(null)
+        }
+      } catch (error) {
+        console.log(error);
+        
+      }setLoading(false)}
+      getCocktail()
+  },[id])
+
+  if(loading) {
+    return <Loading />
+  }
+
+  if(!cocktail) {
+    return <h2 className='section-title'> no cocktail to display</h2>
+  }
+
+  return (
+    <section className='section cocktail-section'>
+      <Link to='/' className='btn btn-primary'>
+        back home
+      </Link>
+      <h1> hello </h1>
+      <h2 className='section-title'>{cocktail.name}</h2>
+      <div className='drink'>
+        <img src={cocktail.image} alt={cocktail.name} />
+        <div className='drink-info'>
+          <p>
+            <span className='drink-data'> name: </span>
+            {cocktail.name}
+          </p>
+          <p>
+            <span className='drink-data'> catogory: </span>
+            {cocktail.category}
+          </p>
+          <p>
+            <span className='drink-data'> info: </span>
+            {cocktail.info}
+          </p>
+          <p>
+            <span className='drink-data'> glass: </span>
+            {cocktail.glass}
+          </p>
+          <p>
+            <span className='drink-data'> instructions: </span>
+            {cocktail.instruction}
+          </p>
+          <p>
+            <span className='drink-data'>
+              ingredients:
+            </span>
+            {cocktail.ingredients.map((item, index) => {
+              return item? <span key={index}>{item}</span> : null
+              // this is a good way to avoid app crash if there is no ingredients 5 or 4
+              // I did a way in realestate app, but this way show here is better
+            })}
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default SingleCocktail
+
