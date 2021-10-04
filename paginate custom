@@ -1,0 +1,133 @@
+app.js:
+import React, { useState, useEffect } from 'react'
+import { useFetch } from './useFetch'
+import Follower from './Follower'
+function App() {
+  const { loading, data } = useFetch()
+  // in useFetch.js, we have the useFetch function to return loading and data, and imported here
+  const [page, setPage] = useState(0)
+  const [followers, setFollowers] = useState([])
+
+  useEffect(() => {
+    if (loading) return
+    setFollowers(data[page])
+    // data here is from setData(paginate(data)) in useFetch.js, so it has newFollowers format in utilis.js
+    // [page] here for index, so will get what page followers
+  }, [loading, page])
+
+  const nextPage = () => {
+    setPage((oldPage) => {
+      let nextPage = oldPage + 1
+      if (nextPage > data.length - 1) {
+        nextPage = 0
+        // if next button clicked to the last page, then set nextpage back to 0 which is go back to the first page
+      }
+      return nextPage
+    })
+  }
+  // above code is to set nextpage based on current page. the oldpage here can be anyname, like item
+  const prevPage = () => {
+    setPage((oldPage) => {
+      let prevPage = oldPage - 1
+      if (prevPage < 0) {
+        prevPage = data.length - 1
+        // if the previouse button clicked to the fist page, then set the prepage back to the last page
+      }
+      return prevPage
+    })
+  }
+
+  const handlePage = (index) => {
+    setPage(index)
+  }
+  // it is use index like 1, 2,3 to set the page number
+
+  return (
+    <main>
+      <div className='section-title'>
+        <h1>{loading ? 'loading...' : 'pagination'}</h1>
+        <div className='underline'></div>
+      </div>
+      <section className='followers'>
+        <div className='container'>
+          {followers.map((follower) => {
+            return <Follower key={follower.id} {...follower} />
+            // this can also be: return <Follower key={follower.id} follower={follower} />
+          })}
+        </div>
+        {!loading && (
+          <div className='btn-container'>
+            <button className='prev-btn' onClick={prevPage}>
+              prev
+            </button>
+            {data.map((item, index) => {
+              return (
+                <button
+                  key={index}
+                  className={`page-btn ${index === page ? 'active-btn' : null}`}
+                  onClick={() => handlePage(index)}
+                >
+                  {index + 1}
+                  {/* index starts from 0, but page number starts at 1, so we use {index+1} here */}
+                </button>
+                // we are not using ReactPaginate library, so we need to write like above code
+              )
+            })}
+            <button className='next-btn' onClick={nextPage}>
+              next
+            </button>
+          </div>
+        )}
+      </section>
+    </main>
+  )
+}
+
+export default App
+
+useFetch.js:
+import { useState, useEffect } from 'react'
+import paginate from './utils'
+const url = 'https://api.github.com/users/john-smilga/followers?per_page=100'
+
+export const useFetch = () => {
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState([])
+
+  const getProducts = async () => {
+    const response = await fetch(url)
+    const data = await response.json()
+    setData(paginate(data))
+    //paginate is from utilis.js, in my other projects like space or real estate I used ReactPaginate library
+    // but this one in utilis is not from a library
+    //  setData(paginate(data)) is to find a certain page, like page 3 or page 7 etc
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    getProducts()
+  }, [])
+  return { loading, data }
+  // this doesn't set the context.js, so we need to return loading and data and export from here
+}
+
+utilis.js:
+const paginate = (followers) => {
+  const itemsPerPage = 10
+  const numberOfPages = Math.ceil(followers.length / itemsPerPage)
+
+  const newFollowers = Array.from({ length: numberOfPages }, (anyname, index) => {
+    // it is this kind format: Array.from(arrayLike, (element, index) => { ... } )
+    // when element is empty, use anyname, or use (_, index) will work too
+    // index here is like page number, like 1, 2, 3
+    const start = index * itemsPerPage
+    return followers.slice(start, start + itemsPerPage)
+   
+  })
+
+  return newFollowers
+  // newFollowers here is an array, for example if there is 5 pages total, then newFollowers has 5 objects in this array
+  // each object has 10 people
+}
+
+export default paginate
