@@ -1,0 +1,302 @@
+context.js:
+import axios from 'axios'
+import React, { useState, useContext, useEffect } from 'react'
+
+const table = {
+  sports: 21,
+  history: 23,
+  politics: 24,
+}
+// this is the table for sports history and politics, I have to set this table, 
+// because later in the url line 101, category needs to be number like 21, 23, 24, not sports, history or politics
+
+const API_ENDPOINT = 'https://opentdb.com/api.php?'
+
+const url = ''
+
+const AppContext = React.createContext()
+
+const AppProvider = ({ children }) => {
+  const [showform, setShowform] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [questions, setQuestions] = useState([])
+  const [index, setIndex] = useState(0)
+  const [correct, setCorrect] = useState(0)
+  const [error, setError] = useState(false)
+  const [quiz, setQuiz] = useState({
+    amount: 10,
+    category: 'sports',
+    difficulity: 'easy',
+  })
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const fetchQuestions = async (url) => {
+    setLoading(true)
+    setShowform(false)
+    const response = await axios(url).catch((err) => console.log(err))
+    //axios is very similar as fetch. Axios performs automatic transforms of JSON data.	
+    //Fetch is a two-step process when handling JSON data- first, to make the actual request; second, to call the .json() method on the response.
+    if (response) {
+      const data = response.data.results
+      console.log('data', data)
+      if (data.length > 0) {
+        setQuestions(data)
+        setLoading(false)
+        setShowform(false)
+        setError(false)
+      } else {
+        setShowform(true)
+        setError(true)
+      }
+    } else {
+      setShowform(true)
+    }
+  }
+
+  const nextQuestion = () => {
+    setIndex((anyname) => {
+      const index = anyname + 1
+      if (index > questions.length -1) {
+        openModal()
+        // open modal to show the result
+        return 0
+      } else {
+        return index
+      }
+      // I just need to update the index, so in app.js line 16, it will update the questions[index]
+      // and it seems I don't need to set useEffect to rerender, it will automatically rerender
+    })
+  }
+
+  const checkAnswer = (value) => {
+    if (value) {
+      setCorrect((item) => item + 1)
+    }
+    // checkAnswer function is in app.js, check answer there and if true, then setCorrect to be 1 more, here item can be anyname
+    nextQuestion()
+  }
+
+  const openModal = () => {
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setShowform(true)
+    setCorrect(0)
+    setIsModalOpen(false)
+  }
+
+  const handleChange = (e) => {
+    setQuiz({...quiz, [e.target.name]: e.target.value})
+    // if here has no ...quiz, will also work
+
+    // the above line can also be like:
+    // const name = e.target.name
+    // const value = e.target.value
+    // setQuiz({...quiz, [name]:value})
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const {amount, category, difficulity} = quiz
+    const url = `${API_ENDPOINT}amount=${amount}&difficulty=${difficulity}&category=${table[category]}`
+    // here this api is set up as category has to be a number like 21, 23, 24 not sports, history, etc
+    // that's why the table was set up earlier.
+    fetchQuestions(url)
+  }
+ 
+  return <AppContext.Provider value={{
+    showform,
+    loading,
+    questions,
+    index,
+    correct,
+    error,
+    isModalOpen,
+    nextQuestion,
+    checkAnswer,
+    closeModal,
+    quiz,
+    handleChange,
+    handleSubmit
+  }}>{children}</AppContext.Provider>
+}
+// make sure use
+export const useGlobalContext = () => {
+  return useContext(AppContext)
+}
+
+export { AppContext, AppProvider }
+
+app.js:
+import React from 'react'
+import { useGlobalContext } from './context'
+
+import SetupForm from './SetupForm'
+import Loading from './Loading'
+import Modal from './Modal'
+function App() {
+  const { showform, loading, questions, index, correct, nextQuestion, checkAnswer} = useGlobalContext()
+  if(showform) {
+    return <SetupForm />
+    // it means when showform is true, will show the form, otherwise will show the fetched questions
+  }
+  if(loading) {
+    return <Loading />
+  }
+  const {question, incorrect_answers, correct_answer} = questions[index]
+  // {question, incorrect_answers, correct_answer} are from the fetch data, already have those properties
+  // pay attention the [index] here, it is smart way
+  let answers = [...incorrect_answers]
+  const tempIndex = Math.floor(Math.random()*4)
+  // will generate number from 0 to 3
+  if (tempIndex === 3) {
+    answers.push(correct_answer)
+    // if the random is 3, then we push the correct answer to the last
+  } else{
+    answers.push(answers[tempIndex])
+    answers[tempIndex] = correct_answer
+    // if the random number is not 3, then we push the going to replaced answer to the last
+    // and then put the correct answer to that position. This is just to shuffle all the answers
+  }
+  return (
+    <main>
+      <Modal />
+      <section className='quiz'>
+        <p className='correct-answers'>
+          correct answers: {correct} / {index}
+          {/* this is to record the correct answer on the right corner */}
+        </p>
+        <article className="container">
+          <h2> {question} </h2>
+          {/* <h2 dangerouslySetInnerHTML={{ __html: question }} /> */}
+          {/* 99% of the time, the only time you’re going to use React dangerouslySetInnerHTML is when an API response returns HTML. */}
+          {/* it might not show properly, then need to use dangerouslySetInnerHTML, but for here it is fine without it */}
+          <div className='btn-container'>
+            {answers.map((item, index) => {
+              return (
+                <button 
+                  key={index}
+                  className='answer-btn'
+                  onClick={()=>checkAnswer(correct_answer === item)}>
+                    {/* onclick here is to check if the clicked choice is correct answer */}
+                  {item}
+                </button>
+              // if doesn't show ok, we can use dangerouslySetInnerHTML as below
+              //   <button
+              //   key={index}
+              //   className='answer-btn'
+              //   onClick={() => checkAnswer(correct_answer === item)}
+              //   dangerouslySetInnerHTML={{ __html: item }}
+              // />
+              )
+
+            })}
+          </div>
+        </article>
+        <button className='next-question' onClick={nextQuestion}>
+          next question
+        </button>
+      </section>
+    </main>
+  )
+}
+
+export default App
+
+modal.js:
+import React from 'react'
+import { useGlobalContext } from './context'
+
+const Modal = () => {
+  const { isModalOpen, closeModal, correct, questions} = useGlobalContext()
+  return (
+    <div className={`${isModalOpen? 'modal-container isOpen' : 'modal-container'}`}>
+     {/* it uses css opacity to control modal open or not */}
+      <div className='modal-content'>
+        <h2>congrats!</h2>
+        <p>
+          You answered {((correct/questions.length) *100).toFixed(0)}% of questions correctly
+         {/* this is to calculate how much percentage correct answers is  */}
+        </p>
+        <button className='close-btn' onClick={closeModal}>
+          play again
+        </button>
+      </div>
+    
+    </div>
+
+    )
+}
+
+export default Modal
+
+setupform.js:
+import React from 'react'
+import { useGlobalContext } from './context'
+
+const SetupForm = () => {
+  const {quiz, handleChange, handleSubmit, error} = useGlobalContext()
+  return (
+    <main>
+      <section className='quiz quiz-small'>
+        <form className='setup-form'>
+          <h2>setup quiz</h2>
+          <div className='form-control'>
+            <label htmlFor='amount'>number of questions</label>
+            <input
+             type = 'number'
+             name = 'amount'
+             id ='amount'
+             value = {quiz.amount}
+             onChange = {handleChange}
+             className="form-input"
+             min={1}
+             max={50} />
+          </div>
+
+          <div className='form-control'>
+            <label htmlFor='category'>category</label>
+            <select
+              name='category'
+              id='category'
+              className='form-input'
+              value={quiz.category}
+              // here if value='category', also ok
+              onChange={handleChange}>
+                <option value='sports'>sports</option>
+                <option value='history'>history</option>
+                <option value='politics'>politics</option>
+              </select>
+          </div>
+
+          <div className='form-control'>
+            <label htmlFor='difficulty'>select difficulty</label>
+            <select
+              name='difficulty'
+              id='difficulty'
+              className='form-input'
+              value={quiz.difficulty}
+              onChange={handleChange}>
+                <option value='easy'>easy</option>
+                <option value='medium'>medium</option>
+                <option value='hard'>hard</option>
+              </select>
+          </div>
+          {error && (
+            <p className='error'>
+               can't generate questions, please try different options
+            </p>
+          )}
+          <button type='submit' onClick={handleSubmit} className='submit-btn'>
+            start
+          </button>
+
+        </form>
+      </section>
+    </main>
+  
+  )
+}
+
+export default SetupForm
